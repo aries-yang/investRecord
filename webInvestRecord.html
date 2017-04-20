@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>投资记录</title>
+	<script src="http://cdn.bootcss.com/jquery/3.1.0/jquery.min.js"></script>
+	<script type="text/javascript" src="cleared.json"></script>
+	<script type="text/javascript" src="settled.json"></script>
+	
+</head>
+<body>
+	<div>
+		<ul class="record"></ul>
+	</div>
+	<div class="more">加载更多</div>
+	<script type="text/javascript">
+		var pagination = {
+			pagesize: 10,
+			clearedTotalSize: cleared.totalSize,
+			settledTotalSize: settled.totalSize,
+			current: 0,
+		}
+		$('.more').click(function(){
+			var $this = $(this);
+			pagination.current = $('.record li').length;
+			if(pagination.current < pagination.settledTotalSize){
+				for(let i = pagination.current; i < pagination.current + pagination.pagesize; i++){
+					if(i < pagination.settledTotalSize){
+						$(".record").append('<li>' + settled.results[i].status + '</li><br/>');
+					}else {
+						pagination.clearedTotalSize > 0 ? $this.html('查看已完结项目') : $this.html('已全部加载');
+					}
+				}
+			}else{
+				pagination.current -= pagination.settledTotalSize;
+				if(pagination.current < pagination.clearedTotalSize){
+					for(let i = pagination.current; i < pagination.current + pagination.pagesize; i++){
+						if(i < pagination.clearedTotalSize){
+							$(".record").append('<li>' + cleared.results[i].status + '</li><br/>');
+						}else{
+							$this.html('真的没有了');
+						}
+					}
+				}
+			}
+		})
+		//进入页面
+		function entrance(){
+			if(pagination.settledTotalSize > 0){
+				show(settled);
+			}else if (pagination.clearedTotalSize > 0) {
+				show(cleared);
+			}else{
+				$('.more').html('没有项目')
+			}
+		}
+		//遍历项目
+		function show(name){
+			for(let i = 0; i < pagination.pagesize; i++){
+				$('.record').append('<li>' + name.results[i].status + '</li><br/>');
+			}
+		}
+		//上拉加载更多
+		function pullUp(){
+
+		}
+		//下拉刷新
+		function pullDown(){
+			widow.location.reload();
+			entrance();
+		}
+		entrance();
+	</script>
+</body>
+</html>

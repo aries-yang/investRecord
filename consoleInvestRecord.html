@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>投资记录</title>
+</head>
+<body>
+	<script type="text/javascript">
+		var t_num = [];//记录总共的条数
+		//模拟数据
+		var key = {
+			settled:'计息中',
+			cleared:'已完结'
+		}
+		function getMock(status_name, num){
+			var that = this;
+			var json = {
+				'results':[],
+				'totalSize':num
+			};
+			for(let i = pagination.current + 1; i <= num; i++){
+				if(i <= pagination[status_name + 'TotalSize'])
+					json.results.push({'status': key[status_name] + '状态第' + i + '条'});
+			}
+			return json.results;
+		}
+		//请求数据的输出格式
+		function req_output(status, json, num){
+			if(!isNaN(num)){
+				var pageNO = Math.ceil(num / pagination.pagesize);
+				var totalSize = status + 'TotalSize';
+				var str = '请求(' + key[status] + '状态，第'+ pageNO +'页数据\n'
+				        + '响应:{\n' 
+						+ 'results:[\n' ;
+				for(let index in json){
+					str += json[index].status + '\n';
+				}
+				str += '],\n'
+					+ 'totalSize:' + pagination[totalSize] + '\n'
+					+ '}';
+				console.log(str);
+			}
+
+		}
+		//界面数据的输出格式
+		function ui_output(status, json){
+			var num = 0;
+			var str = '界面输出：[\n';
+			for (let index in json){
+				str += json[index].status + '\n';
+				num++;
+			}
+			t_num.push(num);
+			pagination.current += json.length;
+			if(pagination.current > json.length){
+				pagination.current = json.length;
+			}			
+			pagination.total_num = t_num.reduce(function(a, b){return a + b},0);
+			//是否显示已全部加载
+			var load_all = pagination.total_num >= pagination.settledTotalSize + pagination.clearedTotalSize ? true : false;
+			//是否显示查看已完结
+			var show_cleared = pagination.total_num === pagination.settledTotalSize && pagination.clearedTotalSize > 0 ? true : false
+			str += '],\n'
+				+ '是否显示“查看已完结”：' + show_cleared + '\n'
+				+ '是否显示“已全部加载”：' + load_all;
+			console.log(str);
+		}
+		//上拉加载更多
+		function pullUp(){
+			console.log(' 开始 上拉加载更多 操作-----------------------------------------');
+			pagination.current = pagination.total_num;
+			if(pagination.current < pagination.settledTotalSize){
+				var data_num = pagination.current + pagination.pagesize >= pagination.settledTotalSize ? pagination.settledTotalSize : pagination.current + pagination.pagesize;
+				req_output('settled', getMock('settled', data_num), data_num);
+				ui_output('settled', getMock('settled', data_num));
+			}else{
+				pagination.current -= pagination.settledTotalSize;
+				if(pagination.current < pagination.clearedTotalSize){
+					var data_num = pagination.current + pagination.pagesize >= pagination.clearedTotalSize ? pagination.clearedTotalSize : pagination.current + pagination.pagesize;
+					req_output('cleared', getMock('cleared', data_num), data_num);
+					ui_output('cleared', getMock('cleared', data_num));
+				}
+			}
+		}
+      	//构造函数方法
+		InvestRecord.prototype = {
+			init: function(){
+				pagination.current = 0;//初始化current值
+				t_num = [];//初始化t_num的值
+				if(this.settled_num <= 0 && this.cleared_num <= 0){//没有任何项目
+					console.log('没有任何项目');
+				}else if(this.settled_num <= 0 && this.cleared_num > 0){//没有计息中项目
+					var init_cleared_num = this.cleared_num >= pagination.pagesize ? pagination.pagesize : this.cleared_num;
+					req_output('cleared', getMock('cleared', init_cleared_num), init_cleared_num);
+					ui_output('cleared', getMock('cleared', init_cleared_num));
+				}else if(this.cleared_num <= 0 && this.settled_num > 0){//没有已完结项目
+					var init_settled_num = this.settled_num >= pagination.pagesize ? pagination.pagesize : this.settled_num
+					req_output('settled', getMock('settled', init_settled_num), init_settled_num);
+					ui_output('settled', getMock('settled', init_settled_num));
+				}else {
+					var init_settled_num = this.settled_num >= pagination.pagesize ? pagination.pagesize : this.settled_num
+					req_output('settled', getMock('settled', init_settled_num), init_settled_num);
+					ui_output('settled', getMock('settled', init_settled_num));
+				}
+			},
+			getSettled_num: function(){
+				return this.settled_num;
+			},
+			getCleared_num: function(){
+				return this.cleared_num;
+			}
+		}
+		//构造函数
+		function InvestRecord(settled_num, cleared_num) {
+			this.settled_num = settled_num;
+			this.cleared_num = cleared_num;
+		}
+		var invest = new InvestRecord(13, 10);
+		var pagination = {
+			pagesize: 10,
+			settledTotalSize: invest.getSettled_num(),
+			clearedTotalSize: invest.getCleared_num(),
+			current: 0,
+			total_num: 0
+		}
+		//进入页面
+		function entrance(){
+			console.log('开始 进入页面 操作-----------------------------------------');
+			invest.init();
+		}
+		//下拉刷新
+		function pullDown(){
+			console.log('开始 下拉刷新 操作-----------------------------------------');
+			invest.init();
+		}
+		entrance();
+		// pullDown();
+		// pullDown();
+		pullUp();
+		pullUp();
+		pullUp();
+		pullDown();
+		// pullUp();
+		// pullUp();
+		// pullUp();
+		pullDown();
+		pullDown();
+	</script>
+</body>
+</html>
